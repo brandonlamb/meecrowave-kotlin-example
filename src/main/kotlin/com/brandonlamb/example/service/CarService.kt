@@ -18,7 +18,6 @@ open class CarService {
   )
 
   open fun findCars(filter: CarFilter): CompletableFuture<Cars> {
-    cars
     return CompletableFuture.supplyAsync<Cars> {
       Cars(
         cars.filter {
