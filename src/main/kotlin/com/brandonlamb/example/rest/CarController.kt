@@ -10,10 +10,7 @@ import java.net.HttpURLConnection
 import javax.ejb.Asynchronous
 import javax.enterprise.context.ApplicationScoped
 import javax.inject.Inject
-import javax.ws.rs.Consumes
-import javax.ws.rs.GET
-import javax.ws.rs.Path
-import javax.ws.rs.Produces
+import javax.ws.rs.*
 import javax.ws.rs.container.AsyncResponse
 import javax.ws.rs.container.Suspended
 import javax.ws.rs.core.MediaType.APPLICATION_JSON
@@ -54,20 +51,27 @@ open class CarController {
     @javax.ws.rs.QueryParam("make")
     make: String?,
 
+    @ApiParam(name = "limit", required = false, example = "10", defaultValue = "10")
+    @qp("limit")
+    @DefaultValue("10")
+    limit: Int,
+
+    @ApiParam(name = "offset", required = false, example = "0", defaultValue = "0")
+    @qp("offset")
+    @DefaultValue("0")
+    offset: Int,
+
     @Suspended res: AsyncResponse
   ) {
-    carService.findCars(CarFilter(make = make)).thenAccept {
+    carService.findCars(CarFilter(make, limit, offset)).thenAccept {
       res.resume(Response.ok(Cars(
         it.cars.map { Car(it.make.toString().toLowerCase(), it.model, it.color) },
-        Paging(it.total, 10, 0)
+        Paging(it.total, limit, offset)
       )).build())
     }
   }
 }
 
-/**
- * Separate api and dto models to de-couple from service layer
- */
 data class Car(val make: String, val model: String, val color: String)
 data class Cars(val cars: List<Car>, val paging: Paging)
 data class Paging(val total: Int, val limit: Int, val offset: Int)
