@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration xmlns="http://logging.apache.org/log4j/2.0/config">
+  <Properties>
+    <Property name="log-path">${sys:catalina.base}/logs/</Property>
+  </Properties>
+
+  <Appenders>
+    <RollingFile name="Application"
+                 fileName="${log-path}/application.log"
+                 filePattern="${log-path}/application-%d{yyyy-MM-dd}-%i.log.gz">
+      <PatternLayout pattern="%d{dd/MMM/yyyy HH:mm:ss,SSS}{GMT-8} [%-5p] [%t] - %c{1}: %m%n"/>
+      <Policies>
+        <TimeBasedTriggeringPolicy/>
+        <SizeBasedTriggeringPolicy size="1MB"/>
+        <CronTriggeringPolicy schedule="0 0 0 * * ?"/>
+      </Policies>
+      <DefaultRolloverStrategy max="5">
+        <Delete basePath="${log-path}" maxDepth="2">
+          <IfFileName glob="*/application-*.log.gz"/>
+          <IfFileName glob="*/access.*.log"/>
+          <IfLastModified age="5d"/>
+        </Delete>
+      </DefaultRolloverStrategy>
+    </RollingFile>
+
+    <RollingFile name="SlowConsole"
+                 fileName="${log-path}/console.log"
+                 filePattern="${log-path}/console-%d{yyyy-MM-dd}-%i.log.gz">
+
+      <!-- {STYLE=Logback} {STYLE=Default} -->
+      <!-- {FATAL=red blink, ERROR=red, WARN=yellow bold, INFO=white, DEBUG=green bold, TRACE=blue} -->
+      <!-- https://logging.apache.org/log4j/2.x/manual/layouts.html -->
+      <!--<PatternLayout pattern="%highlight{%businessDate{ ISO8601 } | [%-5level] | (%class{1.}.%method():%line) %message%n%exception}{FATAL=red blink, ERROR=red, WARN=yellow bold, INFO=white, DEBUG=green bold, TRACE=blue}"/>-->
+      <PatternLayout
+          pattern="%businessDate{ ISO8601 } %highlight{[%-5level] %class{1}.%method:%line - %message%n%exception}{FATAL=red dim blink, ERROR=red bright, WARN=yellow bright, INFO=blue bright, DEBUG=magenta bright, TRACE=cyan bright}"/>
+      <Policies>
+        <TimeBasedTriggeringPolicy/>
+        <SizeBasedTriggeringPolicy size="10MB"/>
+        <CronTriggeringPolicy schedule="0 0 0 * * ?"/>
+      </Policies>
+      <DefaultRolloverStrategy max="1">
+        <Delete basePath="${log-path}" maxDepth="2">
+          <IfFileName glob="*/console-*.log.gz"/>
+          <IfLastModified age="1d"/>
+        </Delete>
+      </DefaultRolloverStrategy>
+    </RollingFile>
+
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d %p %c{1.} [%t] %m%n"/>
+    </Console>
+  </Appenders>
+
+  <!-- Adding additivity="true" will propagate up -->
+  <Loggers>
+    <Root level="error">
+      <AppenderRef ref="Console"/>
+    </Root>
+
+    <Logger name="com" level="info" additivity="false">
+      <AppenderRef ref="Application"/>
+      <AppenderRef ref="SlowConsole"/>
+    </Logger>
+
+    <Logger name="net" level="info" additivity="false">
+      <AppenderRef ref="Application"/>
+      <AppenderRef ref="SlowConsole"/>
+    </Logger>
+
+    <Logger name="org" level="info" additivity="false">
+      <AppenderRef ref="Application"/>
+      <AppenderRef ref="SlowConsole"/>
+    </Logger>
+
+    <Logger name="com.sbux.gred" level="all" additivity="false">
+      <AppenderRef ref="Application"/>
+      <AppenderRef ref="SlowConsole"/>
+    </Logger>
+
+    <Logger name="com.sbux.gred.enterprise.location.dal.sql.mybatis" level="all" additivity="false">
+      <AppenderRef ref="Application"/>
+      <AppenderRef ref="SlowConsole"/>
+    </Logger>
+  </Loggers>
+</Configuration>
