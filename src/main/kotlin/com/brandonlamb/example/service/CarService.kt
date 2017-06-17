@@ -1,9 +1,12 @@
 package com.brandonlamb.example.service
 
+import org.apache.logging.log4j.LogManager
 import java.util.concurrent.CompletableFuture
-import javax.enterprise.context.ApplicationScoped
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.function.Supplier
+import javax.annotation.PreDestroy
 
-@ApplicationScoped
 open class CarService {
   private val cars = arrayOf(
     Car(CarMake.FORD, "Pinto", "Red"),
@@ -17,22 +20,23 @@ open class CarService {
     Car(CarMake.CHEVROLET, "Camaro", "Blue")
   )
 
+  private val executor = Executors.newCachedThreadPool()
+
+  @PreDestroy
+  open fun preDestroy() {
+    executor.awaitTermination(5, TimeUnit.SECONDS)
+    LogManager.getLogger().info("Destroying location delivery dal")
+  }
+
   open fun findCars(filter: CarFilter): CompletableFuture<Cars> {
-    return CompletableFuture.supplyAsync<Cars> {
+    return CompletableFuture.supplyAsync<Cars>(Supplier {
       Cars(
         cars.filter {
           filter.make.isNullOrEmpty() || filter.make?.toLowerCase() == it.make.toString().toLowerCase()
         }.take(filter.limit),
         cars.size
       )
-    }
+    }, executor)
   }
 }
 
-data class Car(val make: CarMake, val model: String, val color: String)
-data class Cars(val cars: List<Car>, val total: Int)
-data class CarFilter(val make: String?, val limit: Int, val offset: Int)
-
-enum class CarMake {
-  FORD, TOYOTA, CHEVROLET
-}

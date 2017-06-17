@@ -9,7 +9,7 @@
     #bufferSize = 1048576
     skipNull = false
     skipEmptyArray = false
-    pretty = true
+    #pretty = true
     #attributeOrder = $naturalOrder
   </Service>
 </resources>

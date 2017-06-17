@@ -6,11 +6,20 @@ import io.swagger.annotations.Api
 import io.swagger.annotations.ApiOperation
 import io.swagger.annotations.ApiParam
 import io.swagger.annotations.ApiResponse
+import org.apache.logging.log4j.LogManager
 import java.net.HttpURLConnection
-import javax.ejb.Asynchronous
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.function.Supplier
+import javax.annotation.PreDestroy
 import javax.enterprise.context.ApplicationScoped
 import javax.inject.Inject
-import javax.ws.rs.*
+import javax.validation.constraints.Max
+import javax.ws.rs.DefaultValue
+import javax.ws.rs.GET
+import javax.ws.rs.Path
+import javax.ws.rs.Produces
 import javax.ws.rs.container.AsyncResponse
 import javax.ws.rs.container.Suspended
 import javax.ws.rs.core.MediaType.APPLICATION_JSON
@@ -21,7 +30,6 @@ import javax.ws.rs.QueryParam as qp
 
 @ApplicationScoped
 @Path("/cars")
-@Consumes(APPLICATION_JSON)
 @Produces(APPLICATION_JSON)
 @Api(
   value = "/cars",
@@ -35,6 +43,14 @@ open class CarController {
   @Inject
   private lateinit var carService: CarService
 
+  private val executor = Executors.newCachedThreadPool()
+
+  @PreDestroy
+  open fun preDestroy() {
+    executor.awaitTermination(5, TimeUnit.SECONDS)
+    LogManager.getLogger().info("Destroying location delivery dal")
+  }
+
   @GET
   @Path("ping")
   @Produces("application/text")
@@ -45,15 +61,15 @@ open class CarController {
   @GET
   @ApiOperation(value = "Get cars, optionally by make", httpMethod = "GET")
   @ApiResponse(code = HttpURLConnection.HTTP_OK, message = "Order import request successfully queued")
-  @Asynchronous
   open fun getCars(
     @ApiParam(name = "make", required = false, example = "Ford, Toyota")
-    @javax.ws.rs.QueryParam("make")
+    @qp("make")
     make: String?,
 
     @ApiParam(name = "limit", required = false, example = "10", defaultValue = "10")
     @qp("limit")
     @DefaultValue("10")
+    @Max(value = 10, message = "1001")
     limit: Int,
 
     @ApiParam(name = "offset", required = false, example = "0", defaultValue = "0")
@@ -63,15 +79,16 @@ open class CarController {
 
     @Suspended res: AsyncResponse
   ) {
-    carService.findCars(CarFilter(make, limit, offset)).thenAccept {
-      res.resume(Response.ok(Cars(
-        it.cars.map { Car(it.make.toString().toLowerCase(), it.model, it.color) },
-        Paging(it.total, limit, offset)
-      )).build())
-    }
+    res.setTimeout(10, TimeUnit.SECONDS)
+    res.setTimeoutHandler { it.resume(Response.status(Response.Status.REQUEST_TIMEOUT).build()) }
+
+    CompletableFuture.supplyAsync(Supplier {
+      carService.findCars(CarFilter(make, limit, offset)).thenAccept {
+        res.resume(Response.ok(Cars(
+          it.cars.map { Car(it.make.toString().toLowerCase(), it.model, it.color) },
+          Paging(it.total, limit, offset)
+        )).build())
+      }
+    }, executor)
   }
 }
-
-data class Car(val make: String, val model: String, val color: String)
-data class Cars(val cars: List<Car>, val paging: Paging)
-data class Paging(val total: Int, val limit: Int, val offset: Int)

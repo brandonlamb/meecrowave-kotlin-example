@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<openejb-jar>
-    <!--<pojo-deployment class-name="jaxrs-application">-->
-        <!--<properties>-->
-          <!--cxf.jaxrs.providers = johnzonProvider-->
-        <!--</properties>-->
-    <!--</pojo-deployment>-->
-</openejb-jar>
