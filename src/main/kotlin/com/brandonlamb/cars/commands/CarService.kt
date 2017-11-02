@@ -1,13 +1,18 @@
-package com.brandonlamb.example.service
+package com.brandonlamb.cars.commands
 
-import org.apache.logging.log4j.LogManager
+import com.brandonlamb.cars.domain.Car
+import com.brandonlamb.cars.domain.CarFilter
+import com.brandonlamb.cars.domain.CarMake
+import com.brandonlamb.cars.domain.Cars
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.ExecutorService
 import java.util.function.Supplier
-import javax.annotation.PreDestroy
+import javax.inject.Inject
+import javax.inject.Named
+import javax.inject.Singleton
 
-open class CarService {
+@Singleton
+open class CarService @Inject constructor(@Named("ServicePool") private val es: ExecutorService) {
   private val cars = arrayOf(
     Car(CarMake.FORD, "Pinto", "Red"),
     Car(CarMake.TOYOTA, "Camry", "Blue"),
@@ -20,14 +25,6 @@ open class CarService {
     Car(CarMake.CHEVROLET, "Camaro", "Blue")
   )
 
-  private val executor = Executors.newCachedThreadPool()
-
-  @PreDestroy
-  open fun preDestroy() {
-    executor.awaitTermination(5, TimeUnit.SECONDS)
-    LogManager.getLogger().info("Destroying location delivery dal")
-  }
-
   open fun findCars(filter: CarFilter): CompletableFuture<Cars> {
     return CompletableFuture.supplyAsync<Cars>(Supplier {
       Cars(
@@ -36,7 +33,6 @@ open class CarService {
         }.take(filter.limit),
         cars.size
       )
-    }, executor)
+    }, es)
   }
 }
-

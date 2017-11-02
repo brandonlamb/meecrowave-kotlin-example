@@ -1,4 +1,4 @@
-package com.brandonlamb.example.rest
+package com.brandonlamb.infrastructure.rest
 
 import javax.json.bind.annotation.JsonbProperty
 
