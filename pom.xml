@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.apache.meecrowave</groupId>
     <artifactId>meecrowave</artifactId>
-    <version>1.1.0</version>
+    <version>1.2.0-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -42,7 +42,7 @@
     <version.junit>4.12</version.junit>
     <version.kotlin>1.1.51</version.kotlin>
     <version.kdoc>0.12.1230</version.kdoc>
-    <version.meecrowave>1.1.0</version.meecrowave>
+    <version.meecrowave>1.2.0-SNAPSHOT</version.meecrowave>
     <version.commons-cli>1.4</version.commons-cli>
     <version.maven-shade-plugin>3.1.0</version.maven-shade-plugin>
     <version.openwebbeans-maven>2.0.2</version.openwebbeans-maven>
@@ -83,7 +83,7 @@
       <groupId>org.apache.meecrowave</groupId>
       <artifactId>meecrowave-core</artifactId>
       <version>${version.meecrowave}</version>
-      <scope>provided</scope>
+      <!--<scope>provided</scope>-->
     </dependency>
 
     <!-- Needed for parsing CLI options -->
@@ -148,6 +148,29 @@
       <plugin>
         <artifactId>kotlin-maven-plugin</artifactId>
         <groupId>org.jetbrains.kotlin</groupId>
+        <version>${version.kotlin}</version>
+
+        <configuration>
+          <compilerPlugins>
+            <!-- Or "jpa" for JPA support -->
+            <plugin>no-arg</plugin>
+          </compilerPlugins>
+
+          <pluginOptions>
+            <option>no-arg:annotation=javax.ws.rs.Path</option>
+            <option>no-arg:annotation=javax.enterprise.context.ApplicationScoped</option>
+            <!-- Call instance initializers in the synthetic constructor -->
+            <!-- <option>no-arg:invokeInitializers=true</option> -->
+          </pluginOptions>
+        </configuration>
+
+        <dependencies>
+          <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-maven-noarg</artifactId>
+            <version>${version.kotlin}</version>
+          </dependency>
+        </dependencies>
 
         <executions>
           <execution>
@@ -192,24 +215,32 @@
               <goal>shade</goal>
             </goals>
             <configuration>
-              <shadedClassifierName>fat</shadedClassifierName>
+              <shadedClassifierName>runner</shadedClassifierName>
               <shadedArtifactAttached>true</shadedArtifactAttached>
-              <dependencyReducedPomLocation>${project.build.directory}/reduced-pom-bundle.xml</dependencyReducedPomLocation>
+              <dependencyReducedPomLocation>
+                ${project.build.directory}/reduced-pom-bundle.xml
+              </dependencyReducedPomLocation>
               <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                <transformer
+                    implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>org.apache.meecrowave.runner.Cli</mainClass>
                 </transformer>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                <transformer
+                    implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
                   <resource>META-INF/cxf/bus-extensions.txt</resource>
                 </transformer>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                <transformer
+                    implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
                   <resource>log4j2.component.properties</resource>
                 </transformer>
                 <transformer
-                  implementation="com.github.edwgiz.mavenShadePlugin.log4j2CacheTransformer.PluginsCacheFileTransformer"/>
-                <transformer implementation="org.apache.openwebbeans.maven.shade.OpenWebBeansPropertiesTransformer"/>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                    implementation="com.github.edwgiz.mavenShadePlugin.log4j2CacheTransformer.PluginsCacheFileTransformer"/>
+                <transformer
+                    implementation="org.apache.openwebbeans.maven.shade.OpenWebBeansPropertiesTransformer"/>
+                <transformer
+                    implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
               </transformers>
+
               <filters>
                 <filter>
                   <artifact>*:*</artifact>
@@ -224,6 +255,13 @@
                   </excludes>
                 </filter>
               </filters>
+
+              <relocations>
+                <relocation>
+                  <pattern>org.apache.commons</pattern>
+                  <shadedPattern>org.apache.meecrowave.shaded.commons</shadedPattern>
+                </relocation>
+              </relocations>
             </configuration>
           </execution>
         </executions>
@@ -234,6 +272,7 @@
             <artifactId>openwebbeans-maven</artifactId>
             <version>${version.openwebbeans-maven}</version>
           </dependency>
+
           <dependency>
             <groupId>com.github.edwgiz</groupId>
             <artifactId>maven-shade-plugin.log4j2-cachefile-transformer</artifactId>

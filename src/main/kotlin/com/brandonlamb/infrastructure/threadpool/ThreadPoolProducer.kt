@@ -7,21 +7,21 @@ import javax.annotation.PreDestroy
 import javax.enterprise.inject.Produces
 import javax.inject.Named
 
-class ThreadPoolProducer {
+open class ThreadPoolProducer {
   private val restPool = Executors.newCachedThreadPool()
   private val servicePool = Executors.newFixedThreadPool(5)
 
   @PreDestroy
-  fun preDestroy() {
+  open fun preDestroy() {
     restPool.awaitTermination(5, TimeUnit.SECONDS)
     servicePool.awaitTermination(5, TimeUnit.SECONDS)
   }
 
   @Produces
   @Named("RestPool")
-  fun createRestPool(): ExecutorService = restPool
+  open fun createRestPool(): ExecutorService = restPool
 
   @Produces
   @Named("ServicePool")
-  fun createServicePool(): ExecutorService = servicePool
+  open fun createServicePool(): ExecutorService = servicePool
 }
