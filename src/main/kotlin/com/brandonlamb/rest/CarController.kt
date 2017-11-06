@@ -1,4 +1,4 @@
-package com.brandonlamb.infrastructure.rest
+package com.brandonlamb.rest
 
 import com.brandonlamb.cars.domain.CarFilter
 import com.brandonlamb.cars.commands.CarService
