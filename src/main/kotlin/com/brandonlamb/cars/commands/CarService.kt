@@ -1,10 +1,18 @@
-package com.brandonlamb.example.service
+package com.brandonlamb.cars.commands
 
+import com.brandonlamb.cars.domain.Car
+import com.brandonlamb.cars.domain.CarFilter
+import com.brandonlamb.cars.domain.CarMake
+import com.brandonlamb.cars.domain.Cars
 import java.util.concurrent.CompletableFuture
-import javax.enterprise.context.ApplicationScoped
+import java.util.concurrent.ExecutorService
+import java.util.function.Supplier
+import javax.inject.Inject
+import javax.inject.Named
+import javax.inject.Singleton
 
-@ApplicationScoped
-open class CarService {
+@Singleton
+open class CarService @Inject constructor(@Named("ServicePool") private val es: ExecutorService) {
   private val cars = arrayOf(
     Car(CarMake.FORD, "Pinto", "Red"),
     Car(CarMake.TOYOTA, "Camry", "Blue"),
@@ -18,21 +26,13 @@ open class CarService {
   )
 
   open fun findCars(filter: CarFilter): CompletableFuture<Cars> {
-    return CompletableFuture.supplyAsync<Cars> {
+    return CompletableFuture.supplyAsync<Cars>(Supplier {
       Cars(
         cars.filter {
           filter.make.isNullOrEmpty() || filter.make?.toLowerCase() == it.make.toString().toLowerCase()
         }.take(filter.limit),
         cars.size
       )
-    }
+    }, es)
   }
-}
-
-data class Car(val make: CarMake, val model: String, val color: String)
-data class Cars(val cars: List<Car>, val total: Int)
-data class CarFilter(val make: String?, val limit: Int, val offset: Int)
-
-enum class CarMake {
-  FORD, TOYOTA, CHEVROLET
 }
